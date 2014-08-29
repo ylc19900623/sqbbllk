@@ -1,0 +1,419 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title>神奇宝贝连连看</title>
+    <script type="text/javascript">
+        var ctx;
+        var canvas1;
+        var card = [];
+        var pairs = [];
+        var firstcard;
+        var matched;
+        var firstsx = 30;
+        var firstsy = 10;
+        var cardrad = 22.5;
+        var cardwidth = 4 * cardrad;
+        var cardheight = 4 * cardrad;
+        var margin = 10;
+        var polycolor = "rgb(254,11,0)";
+        var backcolor = "rgb(128,0,128)";
+        var tablecolor = "rgb(255,255,255)";
+        var frontbgcolor = "rgb(251,215,73)";
+        var firstpick = true;
+        var starttime;
+        var degree;
+        var jiuwei = false;
+        var tid;
+        var point;
+        var banleftclick = false;
+        var tidtimeuse;
+        var tidtimeleft;
+        var countjiuwei = 0;
+        var count=0;
+        function init() {
+            ctx = document.getElementById("canvas").getContext("2d");
+            canvas1 = document.getElementById("canvas");
+            canvas1.addEventListener('click', choose, false);
+			document.getElementById("evaluate").value="";
+            querydDegree();
+            makedeck();
+            shuffle();
+            starttime = new Date();
+            starttime = Number(starttime.getTime());
+        }
+        function querydDegree() {
+            var a = document.form1.degree;
+            for (var i = 0; i < a.length; i++) {
+                if (a.item(i).checked) {
+                    document.getElementById("Degree").value = a.item(i).getAttribute("value");
+                    degree = a.item(i).getAttribute("value");
+                    break;
+                }
+            }
+        }
+        function choose(ev) {
+            if (banleftclick == true) {
+            }
+            else {
+                var sx;
+                var sy;
+                var pick1;
+                var pick2;
+                if (ev.LayerX || (ev.LayerX == 0)) {
+                    sx = ev.LayerX;
+                    sy = ev.LayerY;
+                }
+                else {
+                    sx = ev.offsetX;
+                    sy = ev.offsetY;
+                }
+                for (var i = 0; i < card.length; i++) {
+                    if ((card[i].sx < sx) && ((card[i].sx + card[i].swidth) > sx) && ((card[i].sy + card[i].sheight) > sy) && (card[i].sy < sy) && (card[i].isclick != true)) {
+                        if (firstpick || (i != firstcard))
+                            break;
+                    }
+                }
+                if (i < card.length) {
+                    if (firstpick) {
+                        if (card[i].info == 42) {
+                            jiuwei = true;
+                        }
+                        firstcard = i;
+                        firstpick = false;
+                        ctx.drawImage(card[i].img, card[i].sx, card[i].sy, card[i].swidth, card[i].sheight);
+                        ctx.beginPath();
+                        ctx.strokeStyle = "rgb(128,0,128)";
+                        ctx.strokeRect(card[i].sx, card[i].sy, card[i].swidth, card[i].sheight);
+                    }
+                    else {
+                        firstpick = true;
+                        secondcard = i;
+                        ctx.drawImage(card[i].img, card[i].sx, card[i].sy, card[i].swidth, card[i].sheight);
+                        ctx.beginPath();
+                        ctx.strokeStyle = "rgb(128,0,128)";
+                        ctx.strokeRect(card[i].sx, card[i].sy, card[i].swidth, card[i].sheight);
+                        if (card[i].info == 42) {
+                            if (jiuwei == true) {
+                                jiuwei = false;
+                                card[firstcard].isclick = true;
+                                card[secondcard].isclick = true;
+                                matched = true;
+                                count++;
+                                setTimeout("flipback(" + firstcard + "," + secondcard + "," + matched + ");remark();", 1000);
+                                return;
+                            }
+                            else {
+                                for (var j1 = 0; j1 < card.length; j1++) {
+                                    if (card[j1].sx > (-(1 + cardwidth))) {
+                                        if ((card[j1].info == card[firstcard].info) && (j1 != firstcard)) {
+                                            break;
+                                        }
+                                    }
+                                }
+                                point = new Point(card[j1].sx, card[j1].sy + card[j1].sheight, card[j1].swidth, card[j1].sheight, 0);
+                                banleftclick = true;
+                                count++;
+								document.getElementById("divjiuwei").style.visibility="visible";
+                                tid = setInterval("point.moveit();", 10);
+                                setTimeout("drawjiuwei1(" + firstcard + "," + secondcard + "," + j1 + ");banleftclick=false;document.getElementById(\"divjiuwei\").style.visibility=\"hidden\";", 1200);
+                                jiuwei = false;
+                                return;
+                            }
+                        }
+                        if (jiuwei == true) {
+                            for (var j1 = 0; j1 < card.length; j1++) {
+                                if (card[j1].sx > (-(1 + cardwidth))) {
+                                    if ((card[j1].info == card[secondcard].info) && (j1 != i)) {
+                                        break;
+                                    }
+                                }
+                            }
+                            point = new Point(card[j1].sx, card[j1].sy + card[j1].sheight, card[j1].swidth, card[j1].sheight, 0);
+                            banleftclick = true;
+                            count++;
+							document.getElementById("divjiuwei").style.visibility="visible";
+                            tid = setInterval("point.moveit();", 10);
+                            setTimeout("drawjiuwei1(" + firstcard + "," + secondcard + "," + j1 + ");banleftclick=false;document.getElementById(\"divjiuwei\").style.visibility=\"hidden\";", 1200);
+                            jiuwei = false;
+                        }
+                        else {
+                            if (card[firstcard].info != card[i].info) {
+                                matched = false;
+                            }
+                            else {
+                                count++;
+                                card[firstcard].isclick = true;
+                                card[secondcard].isclick = true;
+                                matched = true;
+                            }
+                            setTimeout("flipback(" + firstcard + "," + secondcard + "," + matched + ");remark();", 1000);
+                        }
+                    }
+                }
+            }
+        }
+        function remark() {
+            var stop1 = false;
+            if (degree == "初级") {
+                if (count + countjiuwei == 6) {
+                    clearInterval(tidtimeuse);
+                    clearInterval(tidtimeleft);
+                    stop1 = true;
+                }
+            }
+            else if (degree == "中级") {
+                if (count + countjiuwei == 18) {
+                    clearInterval(tidtimeuse);
+                    clearInterval(tidtimeleft);
+                    stop1 = true;
+                }
+            }
+            else {
+                if (count + countjiuwei == 36) {
+                    clearInterval(tidtimeuse);
+                    clearInterval(tidtimeleft);
+                    stop1= true;
+                }
+            }
+            if (stop1 == true) {
+                if (degree == "初级") {
+                    if (Number(document.getElementById("timeleft").value) >= 20)
+                        document.getElementById("evaluate").value = "优秀";
+                    if ((Number(document.getElementById("timeleft").value) < 20) && (Number(document.getElementById("timeleft").value) >= 10))
+                        document.getElementById("evaluate").value = "良好";
+                    if ((Number(document.getElementById("timeleft").value) < 10) && (Number(document.getElementById("timeleft").value) > 0))
+                        document.getElementById("evaluate").value = "及格";
+                }
+                else if (degree == "中级") {
+                    if (Number(document.getElementById("timeleft").value) >= 90)
+                        document.getElementById("evaluate").value = "优秀";
+                    if ((Number(document.getElementById("timeleft").value) < 90) && (Number(document.getElementById("timeleft").value) >= 40))
+                        document.getElementById("evaluate").value = "良好";
+                    if ((Number(document.getElementById("timeleft").value) < 40) && (Number(document.getElementById("timeleft").value) > 0))
+                        document.getElementById("evaluate").value = "及格";
+                }
+                else if (degree == "高级") {
+                    if (Number(document.getElementById("timeleft").value) >= 210)
+                        document.getElementById("evaluate").value = "神人";
+                    if ((Number(document.getElementById("timeleft").value) < 210) && (Number(document.getElementById("timeleft").value) >= 160))
+                        document.getElementById("evaluate").value = "优秀";
+                    if ((Number(document.getElementById("timeleft").value) < 160) && (Number(document.getElementById("timeleft").value) > 80))
+                        document.getElementById("evaluate").value = "良好";
+                    if ((Number(document.getElementById("timeleft").value) < 80) && (Number(document.getElementById("timeleft").value) > 0))
+                        document.getElementById("evaluate").value = "及格";
+                }
+            }
+        }
+        function Point(sx, sy, swidth, sheight, times) {
+            this.sx = sx;
+            this.sy = sy;
+            this.x = sx;
+            this.y = sy;
+            this.swidth = swidth;
+            this.sheight = sheight;
+            this.moveit = movepoint;
+            this.times = times;
+        }
+        function movepoint() {
+            ctx.strokeStyle = "rgb(0,255,255)";
+            ctx.moveTo(this.x, this.y);
+            if ((this.x == this.sx) && (this.y <= this.sy) && (this.y > (this.sy - this.sheight))) {
+                this.y -= 3;
+            }
+            else if ((this.y == (this.sy - this.sheight)) && (this.x >= this.sx) && (this.x < (this.sx + this.swidth))) {
+                this.x += 3;
+            }
+            else if ((this.x == (this.sx + this.swidth)) && (this.y < this.sy) && (this.y >= (this.sy - this.sheight))) {
+                this.y += 3;
+            }
+            else if ((this.y == this.sy) && (this.x > this.sx) && (this.x <= (this.sx + this.swidth))) {
+                this.x -= 3;
+            }
+            else {
+            }
+            ctx.lineTo(this.x, this.y);
+            ctx.stroke();
+            this.times += 1;
+            if (this.times >= 120) {
+                clearInterval(tid);
+            }
+        }
+        function drawjiuwei1(first, second, j1) {
+            card[first].isclick = true;
+            card[second].isclick = true;
+            card[j1].isclick = true;
+            ctx.drawImage(card[j1].img, card[j1].sx, card[j1].sy, card[j1].swidth, card[j1].sheight);
+            ctx.beginPath();
+            ctx.strokeStyle = "rgb(128,0,128)";
+            ctx.strokeRect(card[j1].sx, card[j1].sy, card[j1].swidth, card[j1].sheight);
+            setTimeout("drawjiuwei2(" + first + "," + second + "," + j1 + ");remark();", 1000);
+        }
+        function drawjiuwei2(first, second, j1) {
+            ctx.fillStyle = tablecolor;
+            ctx.fillRect(card[second].sx, card[second].sy, card[second].swidth, card[second].sheight);
+            ctx.fillRect(card[first].sx, card[first].sy, card[first].swidth, card[first].sheight);
+            ctx.fillRect(card[j1].sx, card[j1].sy, card[j1].swidth, card[j1].sheight);
+            card[first].sx = -(1 + cardwidth);
+            card[second].sx = -(1 + cardwidth);
+            card[j1].sx = -(1 + cardwidth);
+            card[first].isclick = false;
+            card[second].isclick = false;
+            card[j1].isclick = false;
+        }
+        function shuffle() {
+            var set;
+            var holdimg;
+            for (var i = 0; i < 3 * card.length; i++) {
+                var card1 = Math.floor(Math.random() * card.length);
+                var card2 = Math.floor(Math.random() * card.length);
+                set = card[card1].info;
+                holdimg = card[card1].img;
+                card[card1].info = card[card2].info;
+                card[card1].img = card[card2].img;
+                card[card2].info = set;
+                card[card2].img = holdimg;
+            }
+        }
+        function makedeck() {
+            var i;
+            var acard;
+            var bcard;
+            var pica;
+            var picb;
+            var sx = firstsx;
+            var sy = firstsy;
+            if (degree == "初级") {
+                for (var a1 = 0; a1 < 6; a1++) {
+                    var a = Math.floor(Math.random() * 41);
+                    pairs.push(a);
+                }
+                document.getElementById("timeuse").value = "0";
+                document.getElementById("timeleft").value = 60;
+                tidtimeuse = setInterval("document.getElementById(\"timeuse\").value=Number(document.getElementById(\"timeuse\").value)+1", 1000);
+                tidtimeleft = setInterval("document.getElementById(\"timeleft\").value=Number(document.getElementById(\"timeleft\").value)-1;if(document.getElementById(\"timeleft\").value==\"0\") { clearInterval(tidtimeleft);document.getElementById(\"evaluate\").value=\"失败\"}", 1000);
+            }
+            if (degree == "中级") {
+                for (var a2 = 0; a2 < 18; a2++) {
+                    var a = Math.floor(Math.random() * 47);
+                    if (a == 42)
+                        countjiuwei++;
+                    pairs.push(a);
+                }
+                document.getElementById("timeuse").value = 0;
+                document.getElementById("timeleft").value = 180;
+                tidtimeuse = setInterval("document.getElementById(\"timeuse\").value=Number(document.getElementById(\"timeuse\").value)+1", 1000);
+                tidtimeleft = setInterval("document.getElementById(\"timeleft\").value=Number(document.getElementById(\"timeleft\").value)-1;if(document.getElementById(\"timeleft\").value==\"0\") { clearInterval(tidtimeleft);document.getElementById(\"evaluate\").value=\"失败\"}", 1000);
+            }
+            if (degree == "高级") {
+                for (var a3 = 0; a3 < 36; a3++) {
+                    var a = Math.floor(Math.random() * 47);
+                    if (a == 42)
+                        countjiuwei++;
+                    pairs.push(a);
+                }
+                document.getElementById("timeuse").value = 0;
+                document.getElementById("timeleft").value = 360;
+                tidtimeuse = setInterval("document.getElementById(\"timeuse\").value=Number(document.getElementById(\"timeuse\").value)+1", 1000);
+                tidtimeleft = setInterval("document.getElementById(\"timeleft\").value=Number(document.getElementById(\"timeleft\").value)-1;if(document.getElementById(\"timeleft\").value==\"0\") { clearInterval(tidtimeleft);document.getElementById(\"evaluate\").value=\"失败\"}", 1000);
+            }
+            for (i = 0; i < pairs.length; i++) {
+                if (i == 12) {
+                    sx = firstsx;
+                    sy = firstsy + 2 * cardheight + 2 * margin;
+                }
+                if (i == 24) {
+                    sx = firstsx;
+                    sy = firstsy + 4 * cardheight + 4 * margin;
+                }
+                pica = new Image();
+                pica.src = "图片库/" + pairs[i] + ".png";
+                acard = new Card(sx, sy, cardwidth, cardheight, pica, pairs[i]);
+                picb = new Image();
+                picb.src = "图片库/" + pairs[i] + ".png";
+                bcard = new Card(sx, sy + cardheight + margin, cardwidth, cardheight, picb, pairs[i]);
+                sx += margin + cardwidth;
+                card.push(acard);
+                acard.draw();
+                card.push(bcard);
+                bcard.draw();
+            }
+        }
+        function Card(sx, sy, swidth, sheight, img, i) {
+            this.sx = sx;
+            this.sy = sy;
+            this.swidth = swidth;
+            this.sheight = sheight;
+            this.info = i;
+            this.img = img;
+            this.draw = drawBack;
+            this.isclick = false;
+        }
+        function drawBack() {
+            ctx.fillStyle = backcolor;
+            ctx.fillRect(this.sx, this.sy, this.swidth, this.sheight);
+        }
+        function flipback(first, second, matchbool) {
+            if (!matchbool) {
+                card[first].draw();
+                card[second].draw();
+            }
+            else {
+                ctx.fillStyle = tablecolor;
+                ctx.fillRect(card[second].sx, card[second].sy, card[second].swidth, card[second].sheight);
+                ctx.fillRect(card[first].sx, card[first].sy, card[first].swidth, card[first].sheight);
+                card[first].sx = -(1 + cardwidth);
+                card[second].sx = -(1 + cardwidth);
+                card[firstcard].isclick = false;
+                card[secondcard].isclick = false;
+            }
+        }
+        function selectDegree() {
+		    clearInterval(tidtimeuse);
+            clearInterval(tidtimeleft);
+			document.getElementById("evaluate").value="";
+            ctx.clearRect(0, 0, 1250, 620);
+            jiuwei = false;
+            banleftclick = false;
+            firstpick = true;
+            countjiuwei = 0;
+            count = 0;
+            card = [];
+            pairs = [];
+            querydDegree();
+            makedeck();
+            shuffle();
+        }
+    </script>
+</head>
+<body onload="init()">
+    <form name="form1">
+    <table style="width: 95%; height: 120px; left: 20px; margin-left: 30px" background="图片库/选择难度.jpg">
+        <td width="200px" style="text-align: right">
+            <b><font size="+2" color="#FF66FF">难度选择</font></b>
+        </td>
+        <td width="100px">
+            <input type="radio" name="degree" id="degree1" value="初级" checked="checked" /><b><font
+                size="+1" color="#FF66FF">初级</font></b></br><input type="radio" name="degree" id="degree2"
+                    value="中级" /><b><font size="+1" color="#FF66FF">中级</font></b></br><input type="radio"
+                        name="degree" id="degree3" value="高级" /><b><font size="+1" color="#FF66FF">高级</font></b></br>
+        </td>
+        <td>
+            <input type="button" value="确定" onclick="selectDegree()" />
+        </td>
+        <td width="200">
+        </td>
+        <td align="left">
+            难度等级：<input type="text" size="3" id="Degree" value="" readonly="true" />
+            所用时间：<input type="text" size="4" id="timeuse" value="" readonly="true" />
+            剩余时间：<input type="text" size="4" id="timeleft" value="" readonly="true" />
+            成绩等级:
+            <input type="text" size="4" id="evaluate" value="" readonly="true"/>
+        </td>
+        </tr></table>
+    </form>
+	<div id="divjiuwei" style="position:absolute; left:40%; top:50%; visibility:hidden"><b><font size="+2" color="#FF99CC">你得到了六尾的祝福</font></b></div>
+    <canvas id="canvas" width="1250" height="620">
+Your browser doesn't support the html5 element canvas.
+</canvas>
+</body>
+</html>
